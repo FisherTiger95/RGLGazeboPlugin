@@ -31,7 +31,13 @@
 *.out
 *.app
 
+<<<<<<< HEAD
 .vscode
+=======
+# IDE
+*.vscode
+
+>>>>>>> 36dcabd... Made desired changes in readme for review for installation
 .idea
 build
 install

@@ -21,7 +21,7 @@ Key features:
 
 - OS: [Ubuntu 20.04](https://releases.ubuntu.com/focal/) or [Ubuntu 22.04](https://releases.ubuntu.com/jammy/)
 
-- Gazebo: [Fortress 6.14](https://gazebosim.org/docs/fortress/install)
+- Gazebo: [Garden 7](https://gazebosim.org/docs/garden/install)
 
 - GPU: CUDA-enabled
 
@@ -55,10 +55,17 @@ mkdir build
 cd build
 cmake ..
 make -j
-make install
-cd ..
-export IGN_GAZEBO_SYSTEM_PLUGIN_PATH=`pwd`/install/RGLServerPlugin:$IGN_GAZEBO_SYSTEM_PLUGIN_PATH
-export IGN_GUI_PLUGIN_PATH=`pwd`/install/RGLVisualize:$IGN_GUI_PLUGIN_PATH
+```
+- Export gz-sim plugin path
+```shell
+export GZ_SIM_SYSTEM_PLUGIN_PATH=`pwd`/RGLServerPlugin:$GZ_SIM_SYSTEM_PLUGIN_PATH
+export GZ_SIM_PLUGIN_PATH=`pwd`/RGLVisualize:$GZ_SIM_PLUGIN_PATH
+```
+- Copy shared library to gz-sim plugin path
+```shell
+sudo cp RGLServerPlugin/libRGLServerPlugin* /usr/lib/x86_64-linux-gnu/gz-sim-7/plugins/
+sudo cp RGLVisualize/libRGLVisualize.so /usr/lib/x86_64-linux-gnu/gz-sim-7/plugins/gui/
+
 ```
 ## Demo:
 
@@ -66,8 +73,9 @@ export IGN_GUI_PLUGIN_PATH=`pwd`/install/RGLVisualize:$IGN_GUI_PLUGIN_PATH
 
 Launch the prepared simulation from `test_world` directory:
 ```shell
-ign gazebo sonoma_with_rgl.sdf
+gz sim sonoma_with_rgl.sdf
 ```
+If you have issues with crash refer https://github.com/RobotecAI/RGLGazeboPlugin/issues/12#issuecomment-1495622668
 
 1. Start the simulation by pressing play
 2. The lidar hits should be visible in the GUI
