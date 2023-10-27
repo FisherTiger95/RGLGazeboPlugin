@@ -29,6 +29,9 @@
 #define PARAM_TOPIC_ID "topic"
 #define PARAM_FRAME_ID "frame"
 #define PARAM_UPDATE_ON_PAUSED_SIM_ID "update_on_paused_sim"
+#define PARAM_GAUSSIAN_NOISE_MEAN "gaussian_noise_mean"
+#define PARAM_GAUSSIAN_NOISE_DEV_BASE "gaussian_noise_dev_base"
+#define PARAM_GAUSSIAN_NOISE_RISE_PER_METER "gaussian_noise_rise_per_meter"
 
 namespace rgl
 {
@@ -78,6 +81,21 @@ bool RGLServerPluginInstance::LoadConfiguration(const gz::sim::Entity& entity, c
         return false;
     }
 
+    if (!sdf->HasElement(PARAM_GAUSSIAN_NOISE_MEAN)){
+        gzerr << "No '" << PARAM_GAUSSIAN_NOISE_MEAN << "' parameter specified for the RGL lidar. Disabling plugin.\n";
+        return false;
+    }
+
+    if (!sdf->HasElement(PARAM_GAUSSIAN_NOISE_DEV_BASE)){
+        gzerr << "No '" << PARAM_GAUSSIAN_NOISE_DEV_BASE << "' parameter specified for the RGL lidar. Disabling plugin.\n";
+        return false;
+    }
+
+    if (!sdf->HasElement(PARAM_GAUSSIAN_NOISE_RISE_PER_METER)){
+        gzerr << "No '" << PARAM_GAUSSIAN_NOISE_RISE_PER_METER << "' parameter specified for the RGL lidar. Disabling plugin.\n";
+        return false;
+    }
+
     // Optional parameters
     if (!sdf->HasElement(PARAM_UPDATE_ON_PAUSED_SIM_ID)) {
         gzwarn << "No '" << PARAM_UPDATE_ON_PAUSED_SIM_ID << "' parameter specified for the RGL lidar. "
@@ -91,6 +109,9 @@ bool RGLServerPluginInstance::LoadConfiguration(const gz::sim::Entity& entity, c
     raytraceIntervalTime = std::chrono::microseconds(static_cast<int64_t>(1e6 / updateRateHz));
     lidarMinMaxRange.value[0] = sdf->FindElement(PARAM_RANGE_ID)->Get<float>(PARAM_RANGE_MIN_ID);
     lidarMinMaxRange.value[1] = sdf->FindElement(PARAM_RANGE_ID)->Get<float>(PARAM_RANGE_MAX_ID);
+    gaussianNoiseMean = sdf->Get<float>(PARAM_GAUSSIAN_NOISE_MEAN);
+    gaussianNoiseStDevBase = sdf->Get<float>(PARAM_GAUSSIAN_NOISE_DEV_BASE);
+    gaussianNoiseStDevRisePerMeter = sdf->Get<float>(PARAM_GAUSSIAN_NOISE_RISE_PER_METER);
 
     if (!LidarPatternLoader::Load(sdf, lidarPattern, lidarPatternSampleSize)) {
         return false;
@@ -147,6 +168,7 @@ void RGLServerPluginInstance::CreateLidar(gz::sim::Entity entity,
     if (!CheckRGL(rgl_node_rays_set_range(&rglNodeSetRange, &lidarMinMaxRange, 1)) ||
         !CheckRGL(rgl_node_rays_transform(&rglNodeLidarPose, &identity)) ||
         !CheckRGL(rgl_node_raytrace(&rglNodeRaytrace, nullptr)) ||
+        !CheckRGL(rgl_node_gaussian_noise_distance(&rglNodeGaussianNoiseDistanceNode, gaussianNoiseMean, gaussianNoiseStDevBase, gaussianNoiseStDevRisePerMeter)) ||
         !CheckRGL(rgl_node_points_compact_by_field(&rglNodeCompact, RGL_FIELD_IS_HIT_I32)) ||
         !CheckRGL(rgl_node_points_yield(&rglNodeYieldLaserScan, resultLaserScan.rglFields.data(), resultLaserScan.rglFields.size())) ||
         !CheckRGL(rgl_node_points_format(&rglNodeFormatPointCloudSensor, resultPointCloud.rglFields.data(), resultPointCloud.rglFields.size())) ||
@@ -160,7 +182,8 @@ void RGLServerPluginInstance::CreateLidar(gz::sim::Entity entity,
     if (!CheckRGL(rgl_graph_node_add_child(rglNodesUseRays.front(), rglNodeSetRange)) ||
         !CheckRGL(rgl_graph_node_add_child(rglNodeSetRange, rglNodeLidarPose)) ||
         !CheckRGL(rgl_graph_node_add_child(rglNodeLidarPose, rglNodeRaytrace)) ||
-        !CheckRGL(rgl_graph_node_add_child(rglNodeRaytrace, rglNodeCompact)) ||
+        !CheckRGL(rgl_graph_node_add_child(rglNodeRaytrace, rglNodeGaussianNoiseDistanceNode)) ||
+        !CheckRGL(rgl_graph_node_add_child(rglNodeGaussianNoiseDistanceNode, rglNodeCompact)) ||
         !CheckRGL(rgl_graph_node_add_child(rglNodeCompact, rglNodeFormatPointCloudWorld))) {
 
         gzerr << "Failed to connect RGL nodes when initializing lidar. Disabling plugin.\n";

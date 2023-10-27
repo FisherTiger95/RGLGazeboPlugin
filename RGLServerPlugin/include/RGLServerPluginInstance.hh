@@ -86,6 +86,9 @@ private:
     gz::math::Angle scanHMin;
     gz::math::Angle scanHMax;
     int scanHSamples;
+    float gaussianNoiseMean;
+    float gaussianNoiseStDevBase;
+    float gaussianNoiseStDevRisePerMeter;
     std::vector<rgl_mat3x4f> lidarPattern;
     std::size_t alternatingPatternIndex = 0;
 
@@ -123,6 +126,7 @@ private:
     std::vector<rgl_node_t> rglNodesUseRays;
     rgl_node_t rglNodeLidarPose = nullptr;
     rgl_node_t rglNodeSetRange = nullptr;
+    rgl_node_t rglNodeGaussianNoiseDistanceNode = nullptr;
     rgl_node_t rglNodeRaytrace = nullptr;
     rgl_node_t rglNodeCompact = nullptr;
     rgl_node_t rglNodeYieldLaserScan = nullptr;
