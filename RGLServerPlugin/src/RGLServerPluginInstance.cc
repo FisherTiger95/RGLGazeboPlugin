@@ -36,7 +36,7 @@ void RGLServerPluginInstance::Configure(
         gz::sim::EntityComponentManager& ecm,
         gz::sim::EventManager&)
 {
-    if (LoadConfiguration(sdf)) {
+    if (LoadConfiguration(entity, sdf, ecm)) {
         CreateLidar(entity, ecm);
     };
 }

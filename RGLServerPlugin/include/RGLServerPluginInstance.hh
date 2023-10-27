@@ -59,7 +59,7 @@ public:
             const gz::sim::EntityComponentManager& ecm) override;
 
 private:
-    bool LoadConfiguration(const std::shared_ptr<const sdf::Element>& sdf);
+    bool LoadConfiguration(const gz::sim::Entity& entity, const std::shared_ptr<const sdf::Element>& sdf, gz::sim::EntityComponentManager& ecm);
     void CreateLidar(gz::sim::Entity entity,
                      gz::sim::EntityComponentManager& ecm);
 
