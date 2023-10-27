@@ -16,7 +16,12 @@
 
 #include "RGLServerPluginInstance.hh"
 #include "Utils.hh"
+
 #include <gz/msgs/PointCloudPackedUtils.hh>
+#include <gz/sim/Util.hh>
+#include <gz/sim/Sensor.hh>
+#include <gz/sim/World.hh>
+
 #define PARAM_UPDATE_RATE_ID "update_rate"
 #define PARAM_RANGE_ID "range"
 #define PARAM_TOPIC_ID "topic"
@@ -26,8 +31,15 @@
 namespace rgl
 {
 
-bool RGLServerPluginInstance::LoadConfiguration(const std::shared_ptr<const sdf::Element>& sdf)
+bool RGLServerPluginInstance::LoadConfiguration(const gz::sim::Entity& entity, const std::shared_ptr<const sdf::Element>& sdf, gz::sim::EntityComponentManager& ecm)
 {
+    auto sensor = gz::sim::Sensor(entity);
+    if (!sensor.Valid(ecm)) {
+        gzerr << "RGLServerPluginInstance plugin should be attached to a sensor entity. "
+              << "Failed to initialize.\n";
+        return false;
+    }
+
     // Required parameters
     if (!sdf->HasElement(PARAM_UPDATE_RATE_ID)) {
         gzerr << "No '" << PARAM_UPDATE_RATE_ID << "' parameter specified for the RGL lidar. Disabling plugin.\n";
@@ -39,12 +51,25 @@ bool RGLServerPluginInstance::LoadConfiguration(const std::shared_ptr<const sdf:
         return false;
     }
 
-    if (!sdf->HasElement(PARAM_TOPIC_ID)) {
+    std::vector<std::string> topics;
+    if (sdf->HasElement(PARAM_TOPIC_ID)) {
+        topics.push_back(sdf->Get<std::string>(PARAM_TOPIC_ID));
+    }
+    gz::sim::World world(worldEntity(ecm));
+    if (world.Name(ecm)) {
+        topics.push_back("/world/" + world.Name(ecm).value() + "/" + gz::sim::scopedName(entity, ecm, "/", true) + "/scan/points");
+    }
+    topicName = gz::sim::validTopic(topics);
+    if (topicName.empty()) {
         gzerr << "No '" << PARAM_TOPIC_ID << "' parameter specified for the RGL lidar. Disabling plugin.\n";
         return false;
     }
 
-    if (!sdf->HasElement(PARAM_FRAME_ID)) {
+    if (sdf->HasElement(PARAM_FRAME_ID)) {
+        frameId = sdf->Get<std::string>(PARAM_FRAME_ID);
+    } else if(sensor.Parent(ecm)) {
+        frameId = gz::sim::scopedName(sensor.Parent(ecm).value(), ecm, "::", false) + "::" + sensor.Name(ecm).value();
+    } else {
         gzerr << "No '" << PARAM_FRAME_ID << "' parameter specified for the RGL lidar. Disabling plugin.\n";
         return false;
     }
@@ -61,8 +86,6 @@ bool RGLServerPluginInstance::LoadConfiguration(const std::shared_ptr<const sdf:
     float updateRateHz = sdf->Get<float>(PARAM_UPDATE_RATE_ID);
     raytraceIntervalTime = std::chrono::microseconds(static_cast<int64_t>(1e6 / updateRateHz));
     lidarRange = sdf->Get<float>(PARAM_RANGE_ID);
-    topicName = sdf->Get<std::string>(PARAM_TOPIC_ID);
-    frameId = sdf->Get<std::string>(PARAM_FRAME_ID);
 
     if (!LidarPatternLoader::Load(sdf, lidarPattern)) {
         return false;
