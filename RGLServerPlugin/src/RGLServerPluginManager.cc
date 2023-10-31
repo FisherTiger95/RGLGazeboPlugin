@@ -51,11 +51,17 @@ void RGLServerPluginManager::PostUpdate(
     ecm.EachNew<gz::sim::components::Visual, gz::sim::components::Geometry>
             (std::bind(&RGLServerPluginManager::LoadEntityToRGLCb, this, _1, _2, _3));
 
+    ecm.EachNew<gz::sim::components::Actor>
+            (std::bind(&RGLServerPluginManager::LoadActorToRGLCb, this, _1, _2));
+
     ecm.EachRemoved<>([&](const gz::sim::Entity& entity)-> bool {
         return UnregisterLidarCb(entity, ecm);});
 
     ecm.EachRemoved<gz::sim::components::Visual, gz::sim::components::Geometry>
-            (std::bind(&RGLServerPluginManager::RemoveEntityFromRGLCb, this, _1, _2, _3));
+            (std::bind(&RGLServerPluginManager::RemoveEntityFromRGLCb, this, _1));
+
+    ecm.EachRemoved<gz::sim::components::Actor>
+            (std::bind(&RGLServerPluginManager::RemoveEntityFromRGLCb, this, _1));
 
     UpdateRGLEntityPoses(ecm);
 }
