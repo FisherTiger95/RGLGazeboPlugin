@@ -22,6 +22,7 @@
 
 #include <gz/sim/components/Geometry.hh>
 #include <gz/sim/components/Visual.hh>
+#include <gz/sim/components/Actor.hh>
 #include <gz/sim/System.hh>
 
 #include <gz/transport/Node.hh>
@@ -86,10 +87,12 @@ private:
         const gz::sim::components::Visual*,
         const gz::sim::components::Geometry* geometry);
 
-    bool RemoveEntityFromRGLCb(
+    bool LoadActorToRGLCb(
         const gz::sim::Entity& entity,
-        const gz::sim::components::Visual*,
-        const gz::sim::components::Geometry*);
+        const gz::sim::components::Actor*);
+
+    bool RemoveEntityFromRGLCb(
+        const gz::sim::Entity& entity);
 
     void UpdateRGLEntityPoses(const gz::sim::EntityComponentManager& ecm);
 
