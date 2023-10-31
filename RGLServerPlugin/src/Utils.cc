@@ -38,6 +38,12 @@ gz::math::Pose3<double> FindWorldPose(
         const gz::sim::Entity& entity,
         const gz::sim::EntityComponentManager& ecm)
 {
+    auto trajectoryPoseComp = ecm.Component<gz::sim::components::TrajectoryPose>(entity);
+    if(trajectoryPoseComp) {
+        auto localPose = ecm.Component<gz::sim::components::Pose>(entity);
+        return (localPose->Data() + trajectoryPoseComp->Data());
+    }
+
     auto localPose = ecm.Component<gz::sim::components::Pose>(entity);
     if (nullptr == localPose) {
         gzmsg << "pose data missing - using default pose (0, 0, 0, 0, 0, 0)\n";

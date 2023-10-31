@@ -23,6 +23,7 @@
 #include <gz/sim/components/Geometry.hh>
 #include <gz/sim/components/LaserRetro.hh>
 #include <gz/sim/components/Visual.hh>
+#include <gz/sim/components/Actor.hh>
 #include <gz/sim/System.hh>
 
 #include <gz/transport/Node.hh>
@@ -89,6 +90,10 @@ private:
         const gz::sim::Entity& entity,
         const gz::sim::components::Visual*,
         const gz::sim::components::Geometry* geometry);
+
+    bool LoadActorToRGLCb(
+        const gz::sim::Entity& entity,
+        const gz::sim::components::Actor*);
 
     bool RemoveEntityFromRGLCb(
         const gz::sim::Entity& entity,
