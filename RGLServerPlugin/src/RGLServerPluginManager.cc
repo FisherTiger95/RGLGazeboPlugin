@@ -66,6 +66,11 @@ void RGLServerPluginManager::PostUpdate(
                 return SetLaserRetroCb(entity, laserRetro);
             });
 
+    ecm.EachNew<gz::sim::components::Actor>
+            ([this](auto&& entity, auto&& actor) {
+                return LoadActorToRGLCb(entity, actor);
+            });
+
     ecm.EachRemoved<>
             ([this, &ecm](auto&& entity) {
                 return UnregisterLidarCb(entity, ecm);
@@ -74,6 +79,11 @@ void RGLServerPluginManager::PostUpdate(
     ecm.EachRemoved<gz::sim::components::Visual, gz::sim::components::Geometry>
             ([this](auto&& entity, auto&& visual, auto&& geometry) {
                 return RemoveEntityFromRGLCb(entity, visual, geometry);
+            });
+
+    ecm.EachRemoved<gz::sim::components::Actor>
+            ([this](auto&& entity, auto&& actor) {
+                return RemoveEntityFromRGLCb(entity, nullptr, nullptr);
             });
 
     UpdateRGLEntityTransforms(ecm);
