@@ -15,6 +15,7 @@
 #include <gz/sim/components/CustomSensor.hh>
 #include <gz/sim/components/Link.hh>
 #include <gz/sim/components/SystemPluginInfo.hh>
+#include <sdf/Cylinder.hh>
 
 #include "RGLServerPluginManager.hh"
 
@@ -100,6 +101,42 @@ bool RGLServerPluginManager::LoadEntityToRGLCb(
     }
     rgl_mesh_t rglMesh;
     if (!LoadMeshToRGL(&rglMesh, geometry->Data())) {
+        gzerr << "Failed to load mesh to RGL from entity (" << entity << "). Skipping...\n";
+        return true;
+    }
+    rgl_entity_t rglEntity;
+    if (!CheckRGL(rgl_entity_create(&rglEntity, nullptr, rglMesh))) {
+        gzerr << "Failed to load entity (" << entity << ") to RGL. Skipping...\n";
+        return true;
+    }
+    entitiesInRgl.insert({entity, {rglEntity, rglMesh}});
+    return true;
+}
+
+// always returns true, because the ecm will stop if it encounters false
+bool RGLServerPluginManager::LoadActorToRGLCb(
+        const gz::sim::Entity& entity,
+        const gz::sim::components::Actor*)
+{
+    if (entitiesToIgnore.contains(entity)) {
+        return true;
+    }
+    if (entitiesInRgl.contains(entity)) {
+        gzwarn << "Trying to add same entity (" << entity << ") to rgl multiple times!\n";
+        return true;
+    }
+
+    // create static cylinder for the moment
+    sdf::Cylinder cylinder;
+    cylinder.SetRadius(0.2);
+    cylinder.SetLength(1.8);
+
+    sdf::Geometry actorGeometry;
+    actorGeometry.SetType(sdf::GeometryType::CYLINDER);
+    actorGeometry.SetCylinderShape(cylinder);
+
+    rgl_mesh_t rglMesh;
+    if (!LoadMeshToRGL(&rglMesh, actorGeometry)) {
         gzerr << "Failed to load mesh to RGL from entity (" << entity << "). Skipping...\n";
         return true;
     }
