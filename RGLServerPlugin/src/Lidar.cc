@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
 #include <cstdio>
 
 #include "RGLServerPluginInstance.hh"
@@ -228,8 +229,18 @@ gz::msgs::PointCloudPacked RGLServerPluginInstance::CreatePointCloudMsg(std::chr
     gz::msgs::PointCloudPacked outMsg;
     gz::msgs::InitPointCloudPacked(outMsg, frame, false,
                                          {{"xyz", gz::msgs::PointCloudPacked::Field::FLOAT32}});
+
+    // fill header
+    gz::msgs::Header header;
+    *header.mutable_stamp() =  gz::msgs::Convert(simTime);
+    auto scanDuration = header.add_data();
+    scanDuration->set_key("scan_duration");
+    auto nano = std::chrono::duration_cast<std::chrono::nanoseconds>(raytraceIntervalTime);
+    scanDuration->add_value(std::to_string(std::chrono::nanoseconds(nano).count()));
+    outMsg.mutable_header()->CopyFrom(header);
+
+    // fill points
     outMsg.mutable_data()->resize(hitpointCount * outMsg.point_step());
-    *outMsg.mutable_header()->mutable_stamp() = gz::msgs::Convert(simTime);
     outMsg.set_height(1);
     outMsg.set_width(hitpointCount);
 
