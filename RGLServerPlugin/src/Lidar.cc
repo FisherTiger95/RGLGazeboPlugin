@@ -23,7 +23,8 @@
 #include <gz/sim/World.hh>
 
 #define PARAM_UPDATE_RATE_ID "update_rate"
-#define PARAM_RANGE_ID "range"
+#define PARAM_RANGE_MIN_ID "range_min"
+#define PARAM_RANGE_MAX_ID "range_max"
 #define PARAM_TOPIC_ID "topic"
 #define PARAM_FRAME_ID "frame"
 #define PARAM_UPDATE_ON_PAUSED_SIM_ID "update_on_paused_sim"
@@ -49,8 +50,8 @@ bool RGLServerPluginInstance::LoadConfiguration(const gz::sim::Entity& entity, c
         return false;
     }
 
-    if (!sdf->HasElement(PARAM_RANGE_ID)) {
-        gzerr << "No '" << PARAM_RANGE_ID << "' parameter specified for the RGL lidar. Disabling plugin.\n";
+    if (!sdf->HasElement(PARAM_RANGE_MAX_ID)) {
+        gzerr << "No '" << PARAM_RANGE_MAX_ID << "' parameter specified for the RGL lidar. Disabling plugin.\n";
         return false;
     }
 
@@ -100,10 +101,18 @@ bool RGLServerPluginInstance::LoadConfiguration(const gz::sim::Entity& entity, c
         updateOnPausedSim = sdf->Get<bool>(PARAM_UPDATE_ON_PAUSED_SIM_ID);
     }
 
+    lidarRange.value[0] = 0.05F;
+    if (!sdf->HasElement(PARAM_RANGE_MAX_ID)) {
+        gzwarn << "No '" << PARAM_RANGE_MAX_ID << "' parameter specified for the RGL lidar. "
+                << "Using default value: " << lidarRange.value[0] << "\n";
+    } else {
+        lidarRange.value[0] = sdf->Get<bool>(PARAM_RANGE_MAX_ID);
+    }
+
     // Load configuration
     float updateRateHz = sdf->Get<float>(PARAM_UPDATE_RATE_ID);
     raytraceIntervalTime = std::chrono::microseconds(static_cast<int64_t>(1e6 / updateRateHz));
-    lidarRange = sdf->Get<float>(PARAM_RANGE_ID);
+    lidarRange.value[1] = sdf->Get<float>(PARAM_RANGE_MAX_ID);
     gaussianNoiseMean = sdf->Get<float>(PARAM_GAUSSIAN_NOISE_MEAN);
     gaussianNoiseStDevBase = sdf->Get<float>(PARAM_GAUSSIAN_NOISE_DEV_BASE);
     gaussianNoiseStDevRisePerMeter = sdf->Get<float>(PARAM_GAUSSIAN_NOISE_RISE_PER_METER);
@@ -141,7 +150,7 @@ void RGLServerPluginInstance::CreateLidar(gz::sim::Entity entity,
 
     // set desired fields for API call
     std::vector<rgl_field_t> yieldFields;
-    yieldFields.push_back(RGL_FIELD_XYZ_F32);
+    yieldFields.push_back(RGL_FIELD_XYZ_VEC3_F32);
 
     if (publishLaserScan) {
         yieldFields.push_back(RGL_FIELD_DISTANCE_F32);
@@ -149,7 +158,8 @@ void RGLServerPluginInstance::CreateLidar(gz::sim::Entity entity,
 
     if (!CheckRGL(rgl_node_rays_from_mat3x4f(&rglNodeUseRays, lidarPattern.data(), lidarPattern.size())) ||
         !CheckRGL(rgl_node_rays_transform(&rglNodeLidarPose, &identity)) ||
-        !CheckRGL(rgl_node_raytrace(&rglNodeRaytrace, nullptr, lidarRange)) ||
+        !CheckRGL(rgl_node_rays_set_range(&rglNodeRaysRange, &lidarRange, 1)) ||
+        !CheckRGL(rgl_node_raytrace(&rglNodeRaytrace, nullptr)) ||
         !CheckRGL(rgl_node_gaussian_noise_distance(&rglNodeGaussianNoiseDistanceNode, gaussianNoiseMean, gaussianNoiseStDevBase, gaussianNoiseStDevRisePerMeter)) ||
         !CheckRGL(rgl_node_points_compact(&rglNodeCompact)) ||
         !CheckRGL(rgl_node_points_yield(&rglNodeYield, yieldFields.data(), yieldFields.size())) ||
@@ -238,8 +248,8 @@ void RGLServerPluginInstance::RayTrace(std::chrono::steady_clock::duration simTi
     int32_t hitpointCount = 0;
 
     if (!publishLaserScan) {
-        if (!CheckRGL(rgl_graph_get_result_size(rglNodeYield, RGL_FIELD_XYZ_F32, &hitpointCount, nullptr)) ||
-            !CheckRGL(rgl_graph_get_result_data(rglNodeYield, RGL_FIELD_XYZ_F32, resultPointCloud.data()))) {
+        if (!CheckRGL(rgl_graph_get_result_size(rglNodeYield, RGL_FIELD_XYZ_VEC3_F32, &hitpointCount, nullptr)) ||
+            !CheckRGL(rgl_graph_get_result_data(rglNodeYield, RGL_FIELD_XYZ_VEC3_F32, resultPointCloud.data()))) {
 
             gzerr << "Failed to get result data from RGL lidar.\n";
             return;
@@ -262,8 +272,8 @@ void RGLServerPluginInstance::RayTrace(std::chrono::steady_clock::duration simTi
     }
 
     if (pointCloudWorldPublisher.HasConnections()) {
-        if (!CheckRGL(rgl_graph_get_result_size(rglNodeToLidarFrame, RGL_FIELD_XYZ_F32, &hitpointCount, nullptr)) ||
-            !CheckRGL(rgl_graph_get_result_data(rglNodeCompact, RGL_FIELD_XYZ_F32, resultPointCloud.data()))) {
+        if (!CheckRGL(rgl_graph_get_result_size(rglNodeToLidarFrame, RGL_FIELD_XYZ_VEC3_F32, &hitpointCount, nullptr)) ||
+            !CheckRGL(rgl_graph_get_result_data(rglNodeCompact, RGL_FIELD_XYZ_VEC3_F32, resultPointCloud.data()))) {
 
             gzerr << "Failed to get visualization data from RGL lidar.\n";
             return;
@@ -284,10 +294,10 @@ gz::msgs::LaserScan RGLServerPluginInstance::CreateLaserScanMsg(std::chrono::ste
     outMsg.set_frame(frame);
     outMsg.set_count(hitpointCount);
 
-    outMsg.set_range_min(0.0);
-    outMsg.set_range_max(lidarRange);
+    outMsg.set_range_min(lidarRange.value[0]);
+    outMsg.set_range_max(lidarRange.value[1]);
 
-    ignition::math::Angle hStep((scanHMax-scanHMin)/scanHSamples);
+    gz::math::Angle hStep((scanHMax-scanHMin)/scanHSamples);
 
     outMsg.set_angle_min(scanHMin.Radian());
     outMsg.set_angle_max(scanHMax.Radian());

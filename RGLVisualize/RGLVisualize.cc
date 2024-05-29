@@ -26,6 +26,7 @@
 #include <gz/msgs/Utility.hh>
 #include <gz/plugin/Register.hh>
 #include <gz/transport/Node.hh>
+#include <gz/msgs/details/marker.pb.h>
 
 #include <gz/gui/Application.hh>
 #include <gz/gui/MainWindow.hh>

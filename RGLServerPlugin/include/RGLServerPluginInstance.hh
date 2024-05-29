@@ -27,6 +27,8 @@
 
 #include <gz/transport/Node.hh>
 
+#include <gz/msgs/details/laserscan.pb.h>
+
 namespace rgl
 {
 
@@ -76,7 +78,7 @@ private:
 
     std::string topicName;
     std::string frameId;
-    float lidarRange;
+    rgl_vec2f lidarRange;
     gz::math::Angle scanHMin;
     gz::math::Angle scanHMax;
     int scanHSamples;
@@ -99,6 +101,7 @@ private:
     rgl_node_t rglNodeUseRays = nullptr;
     rgl_node_t rglNodeLidarPose = nullptr;
     rgl_node_t rglNodeGaussianNoiseDistanceNode = nullptr;
+    rgl_node_t rglNodeRaysRange = nullptr;
     rgl_node_t rglNodeRaytrace = nullptr;
     rgl_node_t rglNodeCompact = nullptr;
     rgl_node_t rglNodeYield = nullptr;

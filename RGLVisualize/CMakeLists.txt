@@ -7,12 +7,34 @@ endif()
 
 project(RGLVisualize)
 
-find_package(gz-rendering7 REQUIRED)
+if("$ENV{GZ_VERSION}" STREQUAL "garden")
+    find_package(gz-rendering7 REQUIRED)
+    find_package(gz-gui7 REQUIRED)
+    find_package(gz-msgs9 REQUIRED)
+
+    set(GZ_TARGET_PREFIX gz)
+    set(GZ_RENDERING_VER ${gz-rendering7_VERSION_MAJOR})
+    set(GZ_GUI_VER ${gz-gui7_VERSION_MAJOR})
+    set(GZ_MSGS_VER ${gz-msgs9_VERSION_MAJOR})
+
+
+    message(STATUS "Compiling against Gazebo Garden")
+elseif("$ENV{GZ_VERSION}" STREQUAL "harmonic")
+    find_package(gz-rendering8 REQUIRED)
+    find_package(gz-gui8 REQUIRED)
+    find_package(gz-msgs10 REQUIRED)
+
+    set(GZ_TARGET_PREFIX gz)
+    set(GZ_RENDERING_VER ${gz-rendering8_VERSION_MAJOR})
+    set(GZ_GUI_VER ${gz-gui8_VERSION_MAJOR})
+    set(GZ_MSGS_VER ${gz-msgs10_VERSION_MAJOR})
+
+    message(STATUS "Compiling against Gazebo Harmonic")
+else()
+    message(FATAL_ERROR "This branch is only compatible with Gazebo Garden forward.")
+endif()
 
 set(CMAKE_AUTOMOC ON)
-
-find_package(gz-gui7 REQUIRED)
-find_package(gz-msgs9 REQUIRED)
 
 QT5_ADD_RESOURCES(resources_RCC RGLVisualize.qrc)
 
@@ -23,7 +45,7 @@ add_library(RGLVisualize SHARED
 
 target_link_libraries(RGLVisualize
     PRIVATE
-    gz-gui7::gz-gui7
-    gz-rendering7::gz-rendering7
-    gz-msgs9::gz-msgs9
+    ${GZ_TARGET_PREFIX}-gui${GZ_GUI_VER}
+    ${GZ_TARGET_PREFIX}-rendering${GZ_RENDERING_VER}
+    ${GZ_TARGET_PREFIX}-msgs${GZ_MSGS_VER}
 )

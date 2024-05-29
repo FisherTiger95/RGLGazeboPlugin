@@ -223,7 +223,7 @@ bool LidarPatternLoader::LoadPatternFromLidar2d(const sdf::ElementConstPtr& sdf,
         return false;
     }
 
-    ignition::math::Angle hMin, hMax;
+    gz::math::Angle hMin, hMax;
     int hSamples;
 
     if (!LoadAnglesAndSamplesElement(sdf->FindElement("horizontal"), hMin, hMax, hSamples)) {
@@ -233,14 +233,14 @@ bool LidarPatternLoader::LoadPatternFromLidar2d(const sdf::ElementConstPtr& sdf,
     outPattern.clear();
     outPattern.reserve(hSamples);
 
-    ignition::math::Angle hStep((hMax - hMin) / static_cast<double>(hSamples));
+    gz::math::Angle hStep((hMax - hMin) / static_cast<double>(hSamples));
 
     auto hAngle = hMin;
     for (int i = 0; i < hSamples; ++i) {
         outPattern.push_back(
-            AnglesToRglMat3x4f(ignition::math::Angle::Zero,
+            AnglesToRglMat3x4f(gz::math::Angle::Zero,
                                 // Inverse and shift 90deg pitch to match uniform pattern from Gazebo
-                                ignition::math::Angle::HalfPi,
+                                gz::math::Angle::HalfPi,
                                 hAngle));
         hAngle += hStep;
     }
