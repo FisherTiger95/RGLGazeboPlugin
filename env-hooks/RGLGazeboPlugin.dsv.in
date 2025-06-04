@@ -1,0 +1,8 @@
+prepend-non-duplicate;GZ_SIM_SYSTEM_PLUGIN_PATH;@CMAKE_INSTALL_PREFIX@/RGLServerPlugin
+
+prepend-non-duplicate;GZ_GUI_PLUGIN_PATH;@CMAKE_INSTALL_PREFIX@/RGLVisualize
+
+prepend-non-duplicate;LD_LIBRARY_PATH;@CMAKE_INSTALL_PREFIX@/RGLServerPlugin
+prepend-non-duplicate;LD_LIBRARY_PATH;@CMAKE_INSTALL_PREFIX@/RGLVisualize
+
+prepend-non-duplicate;RGL_PATTERNS_DIR;share/@PROJECT_NAME@/lidar_patterns
