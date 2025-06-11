@@ -65,11 +65,8 @@ bool RGLServerPluginInstance::LoadConfiguration(const gz::sim::Entity& entity, c
     gz::sim::World world(worldEntity(ecm));
     if (sdf->HasElement(PARAM_TOPIC_ID)) {
         topicName = sdf->Get<std::string>(PARAM_TOPIC_ID);
-    } else if (world.Name(ecm)) {
-        topicName = "/world/" + world.Name(ecm).value() + "/" + gz::sim::scopedName(entity, ecm, "/", true) + "/scan/points";
-    } else{
-        gzerr << "No '" << PARAM_TOPIC_ID << "' parameter specified for the RGL lidar. Disabling plugin.\n";
-        return false;
+    } else {
+        topicName = topicFromScopedName(entity, ecm, false) + "/scan/points";
     }
 
     if (sdf->HasElement(PARAM_FRAME_ID)) {
